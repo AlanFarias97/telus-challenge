@@ -1,0 +1,118 @@
+# Docker Compose file for Telus Challenge
+
+services:
+  # ========================================
+  # PRODUCER - Extractor y Transformador
+  # ========================================
+  telus-producer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telus-producer
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/app/data
+      - ./raw_users:/app/raw_users
+      - ./processed_users:/app/processed_users
+      - ./dlq:/app/dlq
+      - ./state:/app/state
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:/app/data/telus.db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+    depends_on:
+      - kafka
+    networks:
+      - telus-network
+
+  # ========================================
+  # CONSUMER - DB y SFTP
+  # ========================================
+  telus-consumer:
+    build:
+      context: .
+      dockerfile: Dockerfile.consumer
+    container_name: telus-consumer
+    volumes:
+      - ./data:/app/data
+      - ./raw_users:/app/raw_users
+      - ./processed_users:/app/processed_users
+      - ./dlq:/app/dlq
+      - ./sftp-keys/telus_consumer_key:/app/sftp-keys/telus_consumer_key:ro
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:sqlite:/app/data/telus.db
+      - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - SFTP_HOST=sftp-server
+      - SFTP_PORT=22
+      - SFTP_USERNAME=${SFTP_USERNAME:-testuser}
+      - SFTP_PRIVATE_KEY_PATH=/app/sftp-keys/telus_consumer_key
+      - SFTP_ENCRYPTION_ENABLED=true
+      - SFTP_ENCRYPTION_KEY=qyONuiLc7pM5adDdRQb8uFdFFPXmU3xXIIuTI5QscRU=
+    depends_on:
+      - kafka
+      - sftp-server
+    networks:
+      - telus-network
+
+  # Servidor SFTP para testing con SSH Key Authentication
+  sftp-server:
+    image: atmoz/sftp:alpine
+    container_name: telus-sftp
+    ports:
+      - "2222:22"
+    volumes:
+      - ./sftp-uploads:/home/testuser/uploads
+      - ./sftp-keys/authorized_keys:/home/testuser/.ssh/keys/authorized_keys:ro
+    command: testuser::1001
+    networks:
+      - telus-network
+
+  # Base de datos SQLite (volumen persistente)
+  sqlite-db:
+    image: alpine:latest
+    container_name: telus-sqlite
+    volumes:
+      - ./data:/data
+    command: sh -c "mkdir -p /data && touch /data/telus.db && tail -f /dev/null"
+    networks:
+      - telus-network
+
+  # ========================================
+  # KAFKA + ZOOKEEPER
+  # ========================================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: telus-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - telus-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: telus-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    networks:
+      - telus-network
+
+networks:
+  telus-network:
+    driver: bridge
+
+volumes:
+  telus-data:
+    driver: local

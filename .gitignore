@@ -1,33 +1,48 @@
-HELP.md
+# Maven
 target/
-.mvn/wrapper/maven-wrapper.jar
+!.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
+# IDE
+.idea/
 *.iml
+*.iws
 *.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
 .vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime data directories (generated during execution)
+data/
+raw_users/
+processed_users/
+dlq/
+sftp-uploads/
+state/
+
+# SSH Keys and encryption keys (SENSITIVE - DO NOT COMMIT)
+sftp-keys/telus_consumer_key
+sftp-keys/telus_consumer_key.pub
+sftp-keys/authorized_keys
+sftp-keys/encryption_key.txt
+
+# Keep directory structure but ignore contents
+!sftp-keys/.gitkeep
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# Spring Boot
+spring-shell.log

@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "required": ["id", "firstName", "email", "age", "company"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "firstName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "age": {
+      "type": "number",
+      "minimum": 18,
+      "maximum": 65
+    },
+    "company": {
+      "type": "object",
+      "required": ["department"],
+      "properties": {
+        "department": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

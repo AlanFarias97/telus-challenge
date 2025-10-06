@@ -1,0 +1,44 @@
+# Dockerfile para el Consumer (Fase 3)
+FROM eclipse-temurin:21-jdk-alpine
+
+# Instalar dependencias básicas
+RUN apk add --no-cache \
+    bash \
+    curl \
+    tzdata
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Copiar Maven Wrapper
+COPY mvnw .
+COPY .mvn .mvn
+
+# Copiar POM para cachear dependencias
+COPY pom.xml .
+
+# Dar permisos de ejecución a Maven Wrapper
+RUN chmod +x ./mvnw
+
+# Descargar dependencias (para aprovechar la caché de Docker)
+RUN ./mvnw dependency:resolve -B
+
+# Copiar código fuente
+COPY src ./src
+
+# Compilar la aplicación
+RUN ./mvnw clean package -DskipTests
+
+# Crear directorios necesarios
+RUN mkdir -p /app/data /app/processed_users
+
+# Exponer puerto (aunque el consumer no necesita puerto HTTP)
+EXPOSE 8081
+
+# Variable de entorno para indicar que es el consumer
+ENV SPRING_MAIN_BANNER-MODE=off
+ENV LOADER_MAIN=com.challenge.telus.ConsumerApplication
+
+# Ejecutar el Consumer con perfil consumer
+ENTRYPOINT ["java", "-Dloader.main=com.challenge.telus.ConsumerApplication", "-jar", "target/telus-0.0.1-SNAPSHOT.jar", "--spring.profiles.active=consumer", "--spring.application.name=telus-consumer"]
+

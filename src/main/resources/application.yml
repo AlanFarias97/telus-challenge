@@ -1,0 +1,128 @@
+spring:
+  application:
+    name: telus
+
+  # Base de datos SQLite
+  datasource:
+    url: jdbc:sqlite:data/telus.db
+    driver-class-name: org.sqlite.JDBC
+
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+
+# Configuracion de la API
+api:
+  users:
+    url: https://dummyjson.com/users
+    limit: 100
+    max-retries: 3
+    retry-delay: 5000
+    retry-multiplier: 3
+
+# Configuracion del extractor
+extractor:
+  schedule:
+    cron: "0 0 2 * * ?"
+    enabled: true
+
+  output:
+    directory: raw_users
+    filename-pattern: "records_{date:yyyyMMdd_HHmmss}.jsonl"
+
+  state:
+    file: extraction_state.json
+    directory: state
+
+  error:
+    max-retries: 3
+    initial-delay: 5000
+    multiplier: 3
+    max-delay: 45000
+
+# Configuracion de Camel
+camel:
+  springboot:
+    main-run-controller: true
+    name: TelusExtractor
+  dataformat:
+    jackson:
+      enabled: true
+      auto-discover-object-mapper: true
+      # (opcionales útiles)
+      pretty-print: false
+      include: NON_NULL
+
+# Configuraci�n de logging
+# Configuración de la Fase 2 - Transformación
+transformation:
+  input:
+    directory: raw_users
+    file-pattern: "*.jsonl"
+  
+  output:
+    processed-directory: processed_users
+    dlq-directory: dlq
+    filename-pattern: "etl_{date:yyyyMMdd_HHmmss}.jsonl"
+    dlq-filename-pattern: "invalid_users_{date:yyyyMMdd_HHmmss}.jsonl"
+  
+  validation:
+    schema-file: "classpath:schemas/user-validation-schema.json"
+    departments-file: "classpath:data/departments.csv"
+
+# Configuración de la Fase 3 - SFTP con SSH Key Authentication y Encriptación
+sftp:
+  host: ${SFTP_HOST:localhost}
+  port: ${SFTP_PORT:22}
+  username: ${SFTP_USERNAME:testuser}
+  password: ${SFTP_PASSWORD:}
+  private-key-path: ${SFTP_PRIVATE_KEY_PATH:}
+  directory: uploads
+  enabled: true
+  # Encriptación de archivos (MANDATORY)
+  encryption:
+    enabled: ${SFTP_ENCRYPTION_ENABLED:true}
+    # Clave AES-256 en Base64 (generada con FileEncryptionUtil.generateKey())
+    # En producción, esta clave debe estar en un key vault o secrets manager
+    key: ${SFTP_ENCRYPTION_KEY:YourBase64EncodedAES256KeyHere}
+
+# Configuración de Kafka
+kafka:
+  bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+  topics:
+    processed-users: processed-users
+  consumer:
+    group-id: telus-consumer-group
+    auto-offset-reset: earliest
+    enable-auto-commit: false
+
+---
+# Perfil para Consumer (Fase 3)
+spring:
+  config:
+    activate:
+      on-profile: consumer
+
+  application:
+    name: telus-consumer
+
+  # El consumer no necesita servidor web
+  main:
+    web-application-type: none
+
+camel:
+  springboot:
+    name: TelusConsumer
+  component:
+    kafka:
+      brokers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+# Configuración de logging
+logging:
+  level:
+    com.challenge.telus: DEBUG
+    org.apache.camel: INFO
+    org.springframework.kafka: WARN
+
