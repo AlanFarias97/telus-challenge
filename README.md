@@ -511,22 +511,100 @@ docker-compose down -v --rmi all
 
 ### ⚠️ Services won't start / SSH keys missing
 
-**Error:** `No such file or directory: sftp-keys/telus_consumer_key`
+**Error:** `No such file or directory: sftp-keys/telus_consumer_key` or `error mounting authorized_keys`
 
 **Solution:** You forgot to generate the security keys!
 
+**Linux/Mac:**
 ```bash
-# Linux/Mac
+# 1. Give execute permissions to the script
+chmod +x generate-keys.sh
+
+# 2. Run the script
 ./generate-keys.sh
 
-# Windows
-.\generate-keys.ps1
-```
+# 3. Verify files were created
+ls -la sftp-keys/
+# Should show: telus_consumer_key, telus_consumer_key.pub, authorized_keys, encryption_key.txt
 
-Then update `docker-compose.yml` with the encryption key and restart:
-```bash
+# 4. Copy the encryption key
+cat sftp-keys/encryption_key.txt
+
+# 5. Update docker-compose.yml with the key
+nano docker-compose.yml  # or vim, code, etc.
+# Find and replace: SFTP_ENCRYPTION_KEY=<paste-key-here>
+
+# 6. Restart services
 docker-compose down
 docker-compose up --build -d
+```
+
+**Windows (PowerShell):**
+```powershell
+# 1. Set execution policy
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+
+# 2. Run the script
+.\generate-keys.ps1
+
+# 3. Verify files were created
+Get-ChildItem sftp-keys\
+
+# 4. Copy the encryption key (shown at end of script)
+Get-Content sftp-keys\encryption_key.txt
+
+# 5. Update docker-compose.yml with the key
+
+# 6. Restart services
+docker-compose down
+docker-compose up --build -d
+```
+
+**Manual key generation (if scripts fail):**
+```bash
+# Linux/Mac
+mkdir -p sftp-keys
+ssh-keygen -t rsa -b 4096 -f sftp-keys/telus_consumer_key -N "" -C "telus-consumer@telus.com"
+cp sftp-keys/telus_consumer_key.pub sftp-keys/authorized_keys
+openssl rand -base64 32 > sftp-keys/encryption_key.txt
+cat sftp-keys/encryption_key.txt  # Copy this to docker-compose.yml
+```
+
+### Diagnostic commands
+
+**Check all files exist (Linux/Mac):**
+```bash
+ls -la sftp-keys/
+# Expected files:
+# -rw-r--r-- authorized_keys
+# -rw------- telus_consumer_key
+# -rw-r--r-- telus_consumer_key.pub
+# -rw-r--r-- encryption_key.txt
+```
+
+**Check Docker volumes are mounting correctly:**
+```bash
+# Check from outside container
+ls -la sftp-keys/telus_consumer_key
+
+# Check from inside consumer container
+docker exec telus-consumer ls -l /app/sftp-keys/telus_consumer_key
+# Should show: -r-------- (read-only)
+
+# Check SFTP server
+docker exec telus-sftp ls -l /home/testuser/.ssh/keys/authorized_keys
+```
+
+**View detailed error logs:**
+```bash
+# All errors
+docker-compose logs 2>&1 | grep -i error
+
+# Consumer specific
+docker-compose logs telus-consumer | tail -50
+
+# SFTP server specific
+docker-compose logs sftp-server | tail -50
 ```
 
 ### Consumer not connecting to SFTP
@@ -537,6 +615,9 @@ docker exec telus-consumer ls -l /app/sftp-keys/telus_consumer_key
 
 # Check SFTP server logs
 docker-compose logs sftp-server
+
+# Test SFTP connection manually
+docker exec telus-consumer sh -c "ls /app/sftp-keys/"
 ```
 
 ### Files not encrypted
@@ -551,7 +632,7 @@ docker-compose logs telus-consumer | grep -i encryption
 ```
 
 ### Kafka messages not flowing
-```bash
+  ```bash
 # Check Kafka is running
 docker-compose ps kafka
 
