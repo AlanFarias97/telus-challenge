@@ -39,7 +39,7 @@ services:
       - ./raw_users:/app/raw_users
       - ./processed_users:/app/processed_users
       - ./dlq:/app/dlq
-      - ./sftp-keys/telus_consumer_key:/app/sftp-keys/telus_consumer_key:ro
+      - ./sftp-keys:/app/sftp-keys:ro  # Mount entire directory (fix for "not a directory" error)
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:sqlite:/app/data/telus.db
@@ -64,7 +64,7 @@ services:
       - "2222:22"
     volumes:
       - ./sftp-uploads:/home/testuser/uploads
-      - ./sftp-keys/authorized_keys:/home/testuser/.ssh/keys/authorized_keys:ro
+      - ./sftp-keys:/home/testuser/.ssh/keys:ro  # Mount entire directory (fix for "not a directory" error)
     command: testuser::1001
     networks:
       - telus-network
