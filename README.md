@@ -15,7 +15,29 @@ Production-ready ETL (Extract, Transform, Load) pipeline for user data processin
 - Docker and Docker Compose installed
 - Available ports: `8080`, `9092`, `2181`, `2222`
 
-### Step 1: Start All Services (One Command!)
+### ⚠️ IMPORTANT: Generate Security Keys First!
+
+**Before starting the services, you MUST generate SSH keys and encryption keys:**
+
+```bash
+# Linux/Mac
+./generate-keys.sh
+
+# Windows (PowerShell)
+.\generate-keys.ps1
+```
+
+This will generate:
+- SSH keys (RSA-4096) for SFTP authentication
+- AES-256 encryption key for file encryption
+
+**Then update `docker-compose.yml`** with the encryption key shown in the script output.
+
+📚 For detailed instructions, see: [`sftp-keys/README.md`](sftp-keys/README.md)
+
+---
+
+### Step 1: Start All Services
 
 ```bash
 docker-compose up --build -d
@@ -486,6 +508,26 @@ docker-compose down -v --rmi all
 ---
 
 ## 🐛 Troubleshooting
+
+### ⚠️ Services won't start / SSH keys missing
+
+**Error:** `No such file or directory: sftp-keys/telus_consumer_key`
+
+**Solution:** You forgot to generate the security keys!
+
+```bash
+# Linux/Mac
+./generate-keys.sh
+
+# Windows
+.\generate-keys.ps1
+```
+
+Then update `docker-compose.yml` with the encryption key and restart:
+```bash
+docker-compose down
+docker-compose up --build -d
+```
 
 ### Consumer not connecting to SFTP
 ```bash

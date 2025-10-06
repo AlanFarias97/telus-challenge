@@ -85,7 +85,9 @@ git clone https://github.com/AlanFarias97/telus-challenge.git
 cd telus-challenge
 ```
 
-### Step 2: Generate Security Keys
+### Step 2: ⚠️ Generate Security Keys (MANDATORY)
+**DO NOT skip this step!** The system requires SSH keys and encryption keys to work.
+
 ```bash
 # Linux/Mac
 ./generate-keys.sh
@@ -94,11 +96,17 @@ cd telus-challenge
 .\generate-keys.ps1
 ```
 
+This generates:
+- SSH keys (RSA-4096) for SFTP authentication
+- AES-256 encryption key for file encryption
+
 ### Step 3: Update Configuration
 Edit `docker-compose.yml` and set the encryption key from `sftp-keys/encryption_key.txt`:
 ```yaml
 SFTP_ENCRYPTION_KEY=<your-generated-key>
 ```
+
+**Tip:** The script shows the key to copy at the end.
 
 ### Step 4: Start Services
 ```bash
