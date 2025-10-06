@@ -5,7 +5,8 @@ FROM eclipse-temurin:21-jdk-alpine
 RUN apk add --no-cache \
     bash \
     curl \
-    tzdata
+    tzdata \
+    sqlite
 
 # Establecer directorio de trabajo
 WORKDIR /app
