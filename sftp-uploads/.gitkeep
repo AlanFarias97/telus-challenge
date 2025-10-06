@@ -1,0 +1,4 @@
+# This file ensures the sftp-uploads directory exists in the repository
+# The directory is used by the SFTP server container to store uploaded files
+# Contents are ignored by .gitignore but the structure is preserved
+

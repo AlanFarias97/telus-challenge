@@ -570,6 +570,64 @@ openssl rand -base64 32 > sftp-keys/encryption_key.txt
 cat sftp-keys/encryption_key.txt  # Copy this to docker-compose.yml
 ```
 
+---
+
+### ⚠️ SFTP Upload Fails: "Permission denied"
+
+**Error:** `com.jcraft.jsch.SftpException: Permission denied` or `Cannot store file: uploads/xxx.enc`
+
+**Cause:** The `./sftp-uploads` directory doesn't have write permissions for the SFTP container user (UID 1001).
+
+**Solution (Linux/Mac):**
+```bash
+# Option 1: Set permissions for everyone (simplest, for dev/testing)
+sudo chmod -R 777 sftp-uploads/
+
+# Option 2: Set ownership to UID 1001 (more secure)
+sudo chown -R 1001:1001 sftp-uploads/
+
+# Option 3: If directory doesn't exist
+mkdir -p sftp-uploads
+sudo chmod 777 sftp-uploads/
+
+# Verify permissions
+ls -la sftp-uploads/
+# Should show: drwxrwxrwx or drwxr-xr-x with owner 1001
+```
+
+**Solution (Windows):**
+```powershell
+# 1. Create directory if it doesn't exist
+New-Item -ItemType Directory -Force -Path sftp-uploads
+
+# 2. Give full permissions to everyone (dev/testing only)
+icacls sftp-uploads /grant Everyone:F /T
+
+# Verify
+Get-Acl sftp-uploads | Format-List
+```
+
+**After fixing permissions:**
+```bash
+# Restart Docker services
+docker-compose restart telus-consumer telus-sftp
+
+# Trigger the extraction again
+curl -X POST http://localhost:8080/api/extract
+```
+
+**Quick verification:**
+```bash
+# Check if files are being uploaded
+ls -la sftp-uploads/
+# Should show .enc files after processing
+
+# Check from inside SFTP container
+docker exec telus-sftp ls -la /home/testuser/uploads/
+```
+
+---
+
 ### Diagnostic commands
 
 **Check all files exist (Linux/Mac):**

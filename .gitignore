@@ -29,6 +29,9 @@ state/
 # Allow source code resources
 !src/main/resources/data/
 
+# Keep directory structure files
+!sftp-uploads/.gitkeep
+
 # SSH Keys and encryption keys (SENSITIVE - DO NOT COMMIT)
 sftp-keys/telus_consumer_key
 sftp-keys/telus_consumer_key.pub
