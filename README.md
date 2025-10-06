@@ -660,6 +660,38 @@ docker exec telus-kafka kafka-consumer-groups --bootstrap-server localhost:9092 
 
 ---
 
+## 🧪 Testing
+
+The project includes **25 unit tests** covering critical components:
+
+### Test Coverage
+- ✅ **FileEncryptionUtil** (8 tests) - AES-256-GCM encryption/decryption
+- ✅ **UserValidationProcessor** (9 tests) - Business rule validation
+- ✅ **DepartmentEnrichmentProcessor** (8 tests) - Data enrichment
+
+### Running Tests
+
+```bash
+# Option 1: Using Maven (requires Java 21)
+./mvnw test
+
+# Option 2: Using Docker (recommended if Java 21 not installed)
+docker run --rm -v $(pwd):/app -w /app eclipse-temurin:21-jdk-alpine sh -c "./mvnw test"
+
+# Option 3: Run specific test class
+./mvnw test -Dtest=FileEncryptionUtilTest
+```
+
+### Test Results (Expected)
+```
+Tests run: 25, Failures: 0, Errors: 0, Skipped: 0
+BUILD SUCCESS
+```
+
+📚 **For detailed testing guide, see:** [`TESTING.md`](TESTING.md)
+
+---
+
 ## 📄 License
 
 This is a technical challenge project for evaluation purposes.
