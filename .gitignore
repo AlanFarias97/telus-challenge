@@ -19,12 +19,15 @@ target/
 Thumbs.db
 
 # Runtime data directories (generated during execution)
-data/
+/data/
 raw_users/
 processed_users/
 dlq/
 sftp-uploads/
 state/
+
+# Allow source code resources
+!src/main/resources/data/
 
 # SSH Keys and encryption keys (SENSITIVE - DO NOT COMMIT)
 sftp-keys/telus_consumer_key
